@@ -47,7 +47,7 @@ static const Layout layouts[] = {
 };
 
 /* key definitions */
-#define MODKEY Mod4Mask
+#define MODKEY Mod1Mask
 #define TAGKEYS(KEY,TAG) \
 	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
 	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
@@ -61,17 +61,19 @@ static const Layout layouts[] = {
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
 static const char *termcmd[]  = { "urxvt", NULL };
-static const char *firefoxcmd[] = { "firefox", NULL };
-static const char *lvcmd[]   = { "amixer", "-q", "set", "Master", "2%-", "unmute", NULL };
-static const char *rvcmd[]   = { "amixer", "-q", "set", "Master", "2%+", "unmute", NULL };
-static const char *mutecmd[] = { "amixer", "-q", "set", "Master", "toggle", NULL };
+static const char *browsercmd[] = { "luakit", NULL };
+/*static const char *lvcmd[]   = { "amixer", "-q", "set", "PCM", "2%-", "unmute", NULL };*/
+/*static const char *rvcmd[]   = { "amixer", "-q", "set", "PCM", "2%+", "unmute", NULL };*/
+static const char *mutecmd[] = { "amixer", "-q", "set", "PCM", "toggle", NULL };
+static const char *lvcmd[] = { "/home/vbihl/.voldown" };
+static const char *rvcmd[] = { "/home/vbihl/.volup" };
 
 #include "zoomswap.c"
 static Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
 	{ MODKEY,                       XK_Return, spawn,          {.v = termcmd } },
-	{ MODKEY,                       XK_f,      spawn,          {.v = firefoxcmd } },
+	{ MODKEY,                       XK_f,      spawn,          {.v = browsercmd } },
 	{ MODKEY,                       XK_b,      togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstack,     {.i = -1 } },
 	{ MODKEY,                       XK_k,      focusstack,     {.i = +1 } },
@@ -105,9 +107,13 @@ static Key keys[] = {
 	TAGKEYS(                        XK_8,                      7)
 	TAGKEYS(                        XK_9,                      8)
 	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
-	{ 0,                            XF86XK_AudioLowerVolume, spawn, {.v = lvcmd } },
-	{ 0,                            XF86XK_AudioRaiseVolume, spawn, {.v = rvcmd } },
-	{ 0,                            XF86XK_AudioMute, spawn,        {.v = mutecmd } },
+	/*{ 0,                            XF86XK_AudioLowerVolume, spawn, {.v = lvcmd } },*/
+	/*{ 0,                            XF86XK_AudioRaiseVolume, spawn, {.v = rvcmd } },*/
+	/*{ 0,                            XF86XK_AudioMute, spawn,        {.v = mutecmd } },*/
+	{ MODKEY,                       XK_minus, spawn,                {.v = lvcmd } },
+	{ MODKEY,                       XK_equal, spawn,                {.v = rvcmd } },
+	{ MODKEY|ShiftMask,             XK_minus, spawn,                {.v = mutecmd } },
+
 
 };
 
