@@ -1,7 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 /* appearance */
 static const char *fonts[] = {
-    "FontAwesome:size=8",
+    "FontAwesome:size=10",
     "Terminus:size=8",
     "Sans:size=10.5",
     "VL Gothic:size=10.5",
@@ -21,6 +21,7 @@ static const Bool showbar           = True;     /* False means no bar */
 static const Bool topbar            = True;     /* False means bottom bar */
 
 /* tagging */
+/*static const char *tags[] = { "\uf269", "\uf120", "\uf025", "\uf003", "5", "6", "7", "8", "9" };*/
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
 static const Rule rules[] = {
@@ -29,8 +30,10 @@ static const Rule rules[] = {
 	 *	WM_NAME(STRING) = title
 	 */
 	/* class      instance    title       tags mask     iscentered     isfloating   monitor */
-	{ "Gimp",     NULL,       NULL,       1 << 7,            False,         False,        -1 },
+	{ "Gimp",     NULL,       NULL,       1 << 7,            False,         True,        -1 },
 	{ "Firefox",  NULL,       NULL,       1 ,       False,         False,       -1 },
+	{ "Steam",  NULL,       NULL,       1 << 6 ,       False,         True,       -1 },
+	{ "IPython",  NULL,       NULL,       1 << 5 ,       False,         False,       -1 },
 	{ "URxvt",  NULL,       NULL,       0,       True,         False,       -1 },
 	{ "feh",  NULL,       NULL,       1 << 4,       False,         False,       -1 },
 	{ "MuPDF",  NULL,       NULL,       1 << 4,       False,         False,       -1 },
