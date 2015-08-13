@@ -1,0 +1,183 @@
+#!/usr/bin/env zsh
+
+# Configuration
+DZEN_ICONPATH=$HOME/.config/xbm
+DATE_FORMAT="%a %d %b %I:%M %p"
+BG='#1f1f1f'
+FG='#c0b18b'
+Y=0
+HEIGHT=14
+WIDTH=661
+X=$1024-$WIDTH
+FONT='Terminess Powerline:size=8'
+# Main loop interval in seconds
+INTERVAL=1
+
+getDate() {
+    nxtbg="#585858"
+    curbg="#d0d0d0"
+    curfg="#262626"
+    pwrl="^bg($nxtbg)^fg($curbg)\ue0b2"
+    
+    icon="^i($DZEN_ICONPATH/clock_12x12.xbm)"
+    today=$(date +$DATE_FORMAT)
+    echo -ne  "$pwrl^bg($curbg)^fg($curfg)$icon $today^fg()^bg()"
+}
+
+getBattery() {
+    nxtbg="#303030"
+    curbg="#585858"
+    pwrl="^bg($nxtbg)^fg($curbg)\ue0b2"
+    if [ -d "/sys/class/power_supply/BAT0" ]; then
+        ac=`acpi -a | grep on-line | wc -l`
+        if [ $ac -gt 0 ]; then
+            #printf "^i($DZEN_ICONPATH/bat_charging_18x12.xbm)"
+            icon="^i($DZEN_ICONPATH/bat_charging_18x12.xbm)"
+            modifier="#afd700"
+        else
+            infos=$(acpi -b)
+            percent=$(echo $infos|sed "s/Battery .: [a-z]*, \([0-9]*\)%\(,.*\|$\)/\1/i")
+            state=$(echo $infos|sed "s/Battery .: \([a-z]*\),.*/\1/i")
+            if [ "$percent" -lt 5 ]; then 
+                modifier="^fg(red)"
+                icon="^icon($DZEN_ICONPATH/bat_empty.xbm)"
+            elif [ "$percent" -lt 20 ]; then modifier="^fg(ff7700)"
+            elif [ "$percent" -lt 50 ]; then modifier="^fg(#b58900)"
+            else modifier="^fg(#859900)"
+            fi
+
+            percent="$percent%"
+
+            icon="^i($DZEN_ICONPATH/bat_half_18x10.xbm)"
+        fi
+    else
+    fi
+
+    echo -ne "$pwrl^bg($curbg)^fg($modifier) $icon ^fg()^bg()"
+}
+
+getActiveNetwork() {
+    curfg="#9e9e9e"
+    pwrl="^fg($curfg)\ue0b3"
+    CURR_IFACE="none" # default to eth0 in case if none active
+    for iface in  `ip link | egrep 'enp[0-9]|wlp[0-9]' | awk -F': ' '{print $2}'` ; do
+        ip link show $iface | grep -q 'state UP' && CURR_IFACE="$iface"
+    done
+
+    if [ "$CURR_IFACE" != "none" ]; then
+        if [ "$CURR_IFACE" = "wlp1s0" ]; then
+            # wifi
+            icon="^i($DZEN_ICONPATH/wifi.xbm)"
+        else
+            # wired
+            icon="^i($DZEN_ICONPATH/wired_10x10.xbm)"
+        fi
+    else
+        # not connected
+        icon="^i($DZEN_ICONPATH/net_down.xbm)"
+    fi
+
+    echo -ne "$pwrl $icon "
+}
+
+getMemory() {
+    curfg="#9e9e9e"
+    pwrl="^fg($curfg)\ue0b3"
+    memory=$(free | grep 'Mem:' | awk '{printf "%.0f", 100 * $3 / $2}')
+    if [ "$memory" -gt 90 ]; then modifier="^fg(red)"
+    elif [ "$memory" -gt 70 ]; then modifier="^fg(#ff7700)"
+    elif [ "$memory" -gt 60 ]; then modifier="^fg(#ffdd00)"
+    elif [ "$memory" -gt 50 ]; then modifier="^fg(#87afd7)"
+    else modifier="^fg(#afd700)"
+    fi
+
+    icon="^i($DZEN_ICONPATH/mem.xbm)"
+    echo -ne "$pwrl$modifier $icon $memory%"
+}
+
+getLoad() {
+    curfg="#9e9e9e"
+    pwrl="^fg($curfg)\ue0b3"
+    load=$(awk '{print $1}' /proc/loadavg)
+    if [ 1 -eq "$(echo "$load > 3.00" | bc)" ]; then modifier="^fg(red)"
+    elif [ 1 -eq "$(echo "$load > 2.00" | bc)" ]; then modifier="^fg(#ff7700)"
+    elif [ 1 -eq "$(echo "$load > 1.00" | bc)" ]; then modifier="^fg(#ffdd00)"
+    elif [ 1 -eq "$(echo "$load > 0.70" | bc)" ]; then modifier="^fg(#87afd7)"
+    else modifier="^fg(#afd700)"
+    fi
+    
+    icon="^i($DZEN_ICONPATH/cpu.xbm)"
+    echo -ne "$pwrl$modifier $icon" "$load"
+}
+
+getCpuTemp() {
+    nxtbg="#585858"
+    curbg="#303030"
+    curfg="#9e9e9e"
+    pwrl="^bg($nxtbg)^fg($curbg)\ue0b2"
+    # CPUs temp
+    # NOTE: lm sernsors needs to be available
+    temp=$(sensors | awk -F+ '{print $2}' | grep 'C' | awk -F. '{print $1}' | head -1)
+    if [ "$temp" -gt 80 ]; then
+        modifier='^fg(red)'
+    elif [ "$temp" -gt 60 ]; then
+        modifier='^fg(#ff7700)'
+    else
+        modifier='^fg(#87afd7)'
+    fi
+    icon="^i($DZEN_ICONPATH/temp.xbm)"
+    echo -ne "$pwrl^bg($curbg)$modifier $icon" "$temp\u00b0C"
+}
+
+getDURate() {
+    pwrl="\ue0b3"
+    dl=$(transmission-remote -l | grep Sum: | awk '{print $(NF-1)}')
+    ul=$(transmission-remote -l | grep Sum: | awk '{print $(NF)}')
+
+    echo "$pwrl ^i($DZEN_ICONPATH/net_down_03.xbm)" "$dl" "^i($DZEN_ICONPATH/net_up_03.xbm)" "$ul"
+}
+
+getCurSong() {
+    pwrl="\ue0b3"
+    #song=`mpc current | awk -F ' - ' '{print $2 " - " $1}'`
+    song=`mpc current | awk -F ' - ' '{print $2}'`
+    icon="^i($DZEN_ICONPATH/phones.xbm)"
+    echo "$pwrl $icon $song[0,20]"
+}
+
+getVol() {
+    nxtbg="#1f1f1f"
+    curbg="#585858"
+    curfg="#dadada"
+    pwrl="^bg($nxtbg)^fg($curbg)\ue0b2"
+    on=`amixer get Master | awk -F '[' '{print $4}' | grep on | wc -l`
+    if [ $on -gt 0 ]; then
+        percent=$(amixer get Master | awk -F '[' '{print $2}' | grep '%' | awk -F '%' '{print $1}')
+        vol="$percent%"
+        icon="^i($DZEN_ICONPATH/spkr_01.xbm)"
+    else
+        vol="x"
+        icon="^i($DZEN_ICONPATH/spkr_02.xbm)"
+    fi
+
+    echo -ne "$pwrl^bg($curbg)^fg($curfg) $icon $vol"
+}
+
+while true; do
+    PDATE=$(getDate)
+    PBAT=$(getBattery)
+    LOAD=$(getLoad)
+    MEM=$(getMemory)
+    TEMP=$(getCpuTemp)
+    CURR_IFACE=$(getActiveNetwork)
+
+    SONG=$(getCurSong)
+    VOL=$(getVol)
+    TRANSMISSION=$(getDURate)
+
+    print "$VOL $SONG $TRANSMISSION $TEMP $LOAD $MEM $CURR_IFACE$PBAT$PDATE"
+
+    sleep $INTERVAL
+
+done | dzen2 -x $X -y $Y -w $WIDTH -h $HEIGHT -bg $BG -fg $FG -fn $FONT -ta r -p
+
